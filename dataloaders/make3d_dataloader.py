@@ -12,8 +12,8 @@ from torch.utils import data
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-TRAIN_DIR = 'Train400lmg'
-TEST_DIR = 'Train400lmg'
+TRAIN_DIR = 'Train400Img'
+TEST_DIR = 'Test134'
 
 
 def get_input_img(path, color=True):
@@ -80,7 +80,6 @@ class Make3DDataset(data.Dataset):
                  resize_before_crop=False
                  ):
         super().__init__()
-        raise NotImplementedError('todo proper resizing+verify transforms')
 
         self.dataset_dir = dataset_dir
         self.use_godard_crop = use_godard_crop
@@ -91,7 +90,7 @@ class Make3DDataset(data.Dataset):
             self.DATA_NAME_DICT['color'] = (TEST_DIR, 'img-', 'jpg')
 
         data_dir = os.path.join(self.dataset_dir, TRAIN_DIR if train else TEST_DIR)
-        self.file_list = self._get_file_list(split_file)
+        self.file_list = self._get_file_list(data_dir)
 
         # Initializate transforms
         self.to_tensor = tf.ToTensor()
@@ -102,9 +101,9 @@ class Make3DDataset(data.Dataset):
 
     def __getitem__(self, f_idx):
         file_info = self.file_list[f_idx]
-        raise NotImplementedError('todo check this')
         base_path = os.path.join(self.dataset_dir, '{}',
                                  '{}' + file_info + '.{}')
+        raise NotImplementedError('todo check this')
         inputs = {}
         color_l_path = base_path.format(*self.DATA_NAME_DICT['color'])
         inputs['color_s_raw'] = get_input_img(color_l_path)
