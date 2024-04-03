@@ -1,8 +1,8 @@
+import csv
 import os
 import time
-import csv
-import numpy as np
 
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.optim
@@ -11,7 +11,8 @@ cudnn.benchmark = True
 
 from models import ResNet, DenseNet
 from metrics import AverageMeter, Result
-from dataloaders.dense_to_sparse import UniformSampling, SimulatedStereo
+from dataloaders.nyu_dataloader import NYUDataset
+from dataloaders.make3d_dataloader import Make3DDataset
 import criteria
 import utils
 
@@ -32,16 +33,8 @@ def create_data_loaders(args):
     traindir = os.path.join(datadir, 'train')
     valdir = os.path.join(datadir, 'val')
 
-    # sparsifier is a class for generating random sparse depth input from the ground truth
-    sparsifier = None
-    max_depth = args.max_depth if args.max_depth >= 0.0 else np.inf
-    if args.sparsifier == UniformSampling.name:
-        sparsifier = UniformSampling(num_samples=args.num_samples, max_depth=max_depth)
-    elif args.sparsifier == SimulatedStereo.name:
-        sparsifier = SimulatedStereo(num_samples=args.num_samples, max_depth=max_depth)
-
+    # todo totally remove sparsification
     if args.data == 'nyudepthv2':
-        from dataloaders.nyu_dataloader import NYUDataset
         if not args.evaluate:
             train_dataset = NYUDataset(traindir, type='train',
                                        modality=args.modality, sparsifier=sparsifier)
@@ -55,7 +48,6 @@ def create_data_loaders(args):
         val_dataset = KITTIDataset(valdir, type='val',
                                    modality=args.modality, sparsifier=sparsifier)
     elif args.data == 'make3d':
-        from dataloaders.make3d_dataloader import Make3DDataset
         if not args.evaluate:
             train_dataset = Make3DDataset(datadir, train=True)
         val_dataset = NotImplementedError
@@ -69,11 +61,8 @@ def create_data_loaders(args):
     # put construction of train loader here, for those who are interested in testing only
     train_loader = None
     if not args.evaluate:
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=args.batch_size, shuffle=True,
-            num_workers=args.workers, pin_memory=True, sampler=None,
-            worker_init_fn=lambda work_id: np.random.seed(work_id))
-        # worker_init_fn ensures different sampling patterns for each data loading thread
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
+                                                   pin_memory=True)
 
     print("=> data loaders created.")
     return train_loader, val_loader
