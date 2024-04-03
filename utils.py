@@ -1,12 +1,15 @@
+import argparse
+import os
+import shutil
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from PIL import Image
+
+from dataloaders.dataloader import MyDataloader
 from dataloaders.dense_to_sparse import UniformSampling, SimulatedStereo
 from models import Decoder
-import os
-import torch
-from dataloaders.dataloader import MyDataloader
-import shutil
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
 
 cmap = plt.cm.viridis
 
@@ -19,13 +22,12 @@ def parse_command():
     decoder_names = Decoder.names
     modality_names = MyDataloader.modality_names
 
-    import argparse
     parser = argparse.ArgumentParser(description='Sparse-to-Dense')
     parser.add_argument('--arch', '-a', metavar='ARCH', default='densenet', choices=model_names,
                         help='model architecture: ' + ' | '.join(model_names) + ' (default: densenet)')
     parser.add_argument('--data', metavar='DATA', default='make3d',
                         choices=data_names,
-                        help='dataset: ' + ' | '.join(data_names) + ' (default: nyudepthv2)')
+                        help='dataset: ' + ' | '.join(data_names) + ' (default: make3d)')
     parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb', choices=modality_names,
                         help='modality: ' + ' | '.join(modality_names) + ' (default: rgb)')
     parser.add_argument('-s', '--num-samples', default=0, type=int, metavar='N',
@@ -45,10 +47,8 @@ def parse_command():
     parser.add_argument('-b', '--batch-size', default=4, type=int, help='mini-batch size (default: 4)')
     parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
                         metavar='LR', help='initial learning rate (default 0.01)')
-    parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                        help='momentum')
-    parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
-                        metavar='W', help='weight decay (default: 1e-4)')
+    parser.add_argument('--weight-decay', '--wd', default=0, type=float,
+                        metavar='W', help='weight decay (default: 0)')
     parser.add_argument('--print-freq', '-p', default=10, type=int,
                         metavar='N', help='print frequency (default: 10)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
@@ -56,8 +56,8 @@ def parse_command():
     parser.add_argument('-e', '--evaluate', dest='evaluate', type=str, default='',
                         help='evaluate model on validation set')
     parser.add_argument('--no-pretrain', dest='pretrained', action='store_false',
-                        help='not to use ImageNet pre-trained weights')
-    parser.set_defaults(pretrained=True)
+                        help="not to use ImageNet pre-trained weights, does not by default")
+    parser.set_defaults(pretrained=False)
     args = parser.parse_args()
     if args.modality == 'rgb' and args.num_samples != 0:
         print("number of samples is forced to be 0 when input modality is rgb")

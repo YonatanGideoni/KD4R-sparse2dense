@@ -28,8 +28,9 @@ best_result.set_to_worst()
 def create_data_loaders(args):
     # Data loading code
     print("=> creating data loaders ...")
-    traindir = os.path.join('data', args.data, 'train')
-    valdir = os.path.join('data', args.data, 'val')
+    datadir = os.path.join('data', args.data)
+    traindir = os.path.join(datadir, 'train')
+    valdir = os.path.join(datadir, 'val')
 
     # sparsifier is a class for generating random sparse depth input from the ground truth
     sparsifier = None
@@ -56,7 +57,7 @@ def create_data_loaders(args):
     elif args.data == 'make3d':
         from dataloaders.make3d_dataloader import Make3DDataset
         if not args.evaluate:
-            train_dataset = Make3DDataset(traindir, train=True)
+            train_dataset = Make3DDataset(datadir, train=True)
         val_dataset = NotImplementedError
     else:
         raise RuntimeError('Dataset not found.')
@@ -128,8 +129,9 @@ def main():
             model = ResNet(layers=18, decoder=args.decoder, output_size=train_loader.dataset.output_size,
                            in_channels=in_channels, pretrained=args.pretrained)
         print("=> model created.")
-        optimizer = torch.optim.SGD(model.parameters(), args.lr, \
-                                    momentum=args.momentum, weight_decay=args.weight_decay)
+
+        optim = torch.optim.Adam if args.weight_decay == 0 else torch.optim.AdamW
+        optimizer = optim(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
         # model = torch.nn.DataParallel(model).cuda() # for multi-gpu training
         model = model.cuda()
