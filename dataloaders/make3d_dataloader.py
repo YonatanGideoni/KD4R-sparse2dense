@@ -12,8 +12,10 @@ from torch.utils import data
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-TRAIN_DIR = 'Train400Img'
-TEST_DIR = 'Test134'
+IMG_TRAIN_DIR = 'Train400Img'
+IMG_TEST_DIR = 'Test134'
+DEPTH_TRAIN_DIR = 'Train400Depth'
+DEPTH_TEST_DIR = 'Gridlaserdata'
 
 
 def get_input_img(path, color=True):
@@ -67,8 +69,8 @@ def sub2ind(matrixSize, rowSub, colSub):
 
 class Make3DDataset(data.Dataset):
     DATA_NAME_DICT = {
-        'color': (TRAIN_DIR, 'img-', 'jpg'),
-        'depth': ('Gridlaserdata', 'depth_sph_corr-', 'mat')
+        'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
+        'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat')
     }
 
     def __init__(self,
@@ -87,9 +89,10 @@ class Make3DDataset(data.Dataset):
         self.resize_before_crop = resize_before_crop
 
         if not train:
-            self.DATA_NAME_DICT['color'] = (TEST_DIR, 'img-', 'jpg')
+            self.DATA_NAME_DICT['color'] = (IMG_TEST_DIR, 'img-', 'jpg')
+            self.DATA_NAME_DICT['depth'] = (DEPTH_TEST_DIR, 'depth_sph_corr-', 'mat')
 
-        data_dir = os.path.join(self.dataset_dir, TRAIN_DIR if train else TEST_DIR)
+        data_dir = os.path.join(self.dataset_dir, IMG_TRAIN_DIR if train else IMG_TEST_DIR)
         self.file_list = self._get_file_list(data_dir)
 
         # Initializate transforms
@@ -103,7 +106,6 @@ class Make3DDataset(data.Dataset):
         file_info = self.file_list[f_idx]
         base_path = os.path.join(self.dataset_dir, '{}',
                                  '{}' + file_info + '.{}')
-        raise NotImplementedError('todo check this')
         inputs = {}
         color_l_path = base_path.format(*self.DATA_NAME_DICT['color'])
         inputs['color_s_raw'] = get_input_img(color_l_path)
@@ -157,6 +159,6 @@ class Make3DDataset(data.Dataset):
             if f[-3:] != 'jpg':
                 continue
 
-            file_name = f.replace('\n', '').replace('.jpg', '')
+            file_name = f.replace('\n', '').replace('.jpg', '').replace('img-', '')
             filenames.append(file_name)
         return filenames
