@@ -6,6 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models
 
+from layers import DenseBlock, TransitionDown, Bottleneck, TransitionUp
+
 
 class Unpool(nn.Module):
     # Unpool: 2*2 unpooling with zero padding
@@ -235,12 +237,6 @@ class ResNet(nn.Module):
         return x
 
 
-import torch
-import torch.nn as nn
-
-from .layers import *
-
-
 class FCDenseNet(nn.Module):
     def __init__(self, in_channels=3, down_blocks=(5, 5, 5, 5, 5),
                  up_blocks=(5, 5, 5, 5, 5), bottleneck_layers=5,
@@ -271,7 +267,6 @@ class FCDenseNet(nn.Module):
         #####################
         #     Bottleneck    #
         #####################
-
         self.add_module('bottleneck', Bottleneck(cur_channels_count,
                                                  growth_rate, bottleneck_layers))
         prev_block_channels = growth_rate * bottleneck_layers
