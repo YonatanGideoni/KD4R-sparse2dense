@@ -15,7 +15,7 @@ cmap = plt.cm.viridis
 
 
 def parse_command():
-    model_names = ['resnet18', 'resnet50', 'densenet']
+    model_names = ['resnet18', 'resnet50', 'densenet57']
     loss_names = ['l1', 'l2']
     data_names = ['nyudepthv2', 'kitti', 'make3d']
     sparsifier_names = [x.name for x in [UniformSampling, SimulatedStereo]]
@@ -23,8 +23,8 @@ def parse_command():
     modality_names = MyDataloader.modality_names
 
     parser = argparse.ArgumentParser(description='Sparse-to-Dense')
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='densenet', choices=model_names,
-                        help='model architecture: ' + ' | '.join(model_names) + ' (default: densenet)')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='densenet57', choices=model_names,
+                        help='model architecture: ' + ' | '.join(model_names) + ' (default: densenet57)')
     parser.add_argument('--data', metavar='DATA', default='make3d',
                         choices=data_names,
                         help='dataset: ' + ' | '.join(data_names) + ' (default: make3d)')

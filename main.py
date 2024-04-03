@@ -2,19 +2,15 @@ import csv
 import os
 import time
 
-import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
 import torch.optim
 
-cudnn.benchmark = True
-
-from models import ResNet, DenseNet
-from metrics import AverageMeter, Result
-from dataloaders.nyu_dataloader import NYUDataset
-from dataloaders.make3d_dataloader import Make3DDataset
 import criteria
 import utils
+from dataloaders.make3d_dataloader import Make3DDataset
+from dataloaders.nyu_dataloader import NYUDataset
+from metrics import AverageMeter, Result
+from models import ResNet, FCDenseNet57
 
 args = utils.parse_command()
 print(args)
@@ -24,6 +20,9 @@ fieldnames = ['mse', 'rmse', 'absrel', 'lg10', 'mae',
               'data_time', 'gpu_time']
 best_result = Result()
 best_result.set_to_worst()
+
+cuda_enabled = torch.cuda.is_available()
+device = torch.device("cuda" if cuda_enabled else "cpu")
 
 
 def create_data_loaders(args):
@@ -71,8 +70,6 @@ def create_data_loaders(args):
 def main():
     global args, best_result, output_directory, train_csv, test_csv
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # evaluation mode
     start_epoch = 0
     if args.evaluate:
@@ -119,9 +116,9 @@ def main():
         elif args.arch == 'resnet18':
             model = ResNet(layers=18, decoder=args.decoder, output_size=train_loader.dataset.output_size,
                            in_channels=in_channels, pretrained=args.pretrained)
-        elif args.arch == 'densenet':
+        elif args.arch == 'densenet57':
             # todo add depth to args+number of outputs
-            model = DenseNet(in_channels=in_channels, out_channels=1, depth=56)
+            model = FCDenseNet57(out_channels=1)
         else:
             raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
         print("=> model created.")
@@ -188,8 +185,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
 
-        input, target = input.cuda(), target.cuda()
-        torch.cuda.synchronize()
+        input, target = input.to(device), target.to(device)
+        if cuda_enabled:
+            torch.cuda.synchronize()
+
         data_time = time.time() - end
 
         # compute pred
@@ -199,7 +198,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         optimizer.zero_grad()
         loss.backward()  # compute gradient and do SGD step
         optimizer.step()
-        torch.cuda.synchronize()
+
+        if cuda_enabled:
+            torch.cuda.synchronize()
+
         gpu_time = time.time() - end
 
         # measure accuracy and record loss
