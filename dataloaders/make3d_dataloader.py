@@ -77,14 +77,12 @@ class Make3DDataset(data.Dataset):
                  dataset_dir: str,
                  train: bool = True,
                  normalize_params=[0.411, 0.432, 0.45],
-                 use_godard_crop=True,
-                 full_size=None,
+                 full_size=(224, 224),
                  resize_before_crop=False
                  ):
         super().__init__()
 
         self.dataset_dir = dataset_dir
-        self.use_godard_crop = use_godard_crop
         self.full_size = full_size
         self.resize_before_crop = resize_before_crop
 
@@ -121,15 +119,9 @@ class Make3DDataset(data.Dataset):
                                                   interpolation=Image.ANTIALIAS)
 
                     img = self.to_tensor(self.color_resize(raw_img))
-                    if self.use_godard_crop:
-                        top = int((self.full_size[0] - self.full_size[1] / 2) / 2) + 1
-                        bottom = int((self.full_size[0] + self.full_size[1] / 2) / 2) + 1
-                        img = img[:, top:bottom, :]
                     inputs[key.replace('_raw', '')] = \
                         self.normalize(img)
                 else:
-                    if self.use_godard_crop:
-                        raw_img = raw_img.crop((0, 710, 1704, 1562))
                     img = self.to_tensor(raw_img)
                     if self.full_size is not None:
                         # for outputting the same image with cv2
@@ -141,16 +133,10 @@ class Make3DDataset(data.Dataset):
 
             elif 'depth' in key:
                 raw_depth = inputs[key]
-                if self.use_godard_crop:
-                    raise NotImplementedError('what are these numbers?')
-                    raw_depth = raw_depth[17:38, :]
                 depth = torch.from_numpy(raw_depth.copy()).unsqueeze(0)
                 inputs[key] = depth
 
-        # delete raw data
-        inputs.pop('color_s_raw')
-        inputs['file_info'] = [file_info]
-        return inputs
+        return inputs['color_s'], inputs['depth']
 
     def _get_file_list(self, data_dir):
         files = os.listdir(data_dir)
