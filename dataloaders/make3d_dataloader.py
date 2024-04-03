@@ -1,68 +1,163 @@
-import glob
-import os.path as osp
-import random
+# taken from https://github.com/ZM-Zhou/SMDE-Pytorch/
 
-import cv2
+import os
+
 import numpy as np
 import torch
-from torch.utils.data import Dataset
-from torchvision import transforms as tr
+import torch.nn.functional as F
+import torchvision.transforms as tf
+from PIL import Image, ImageFile
+from scipy.io import loadmat
+from torch.utils import data
 
-use_cuda = torch.cuda.is_available()
-torch.manual_seed(1)
-if use_cuda:
-    gpu = 0
-    seed = 250
-    random.seed(seed)
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    torch.cuda.manual_seed_all(seed)
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+TRAIN_DIR = 'Train400lmg'
+TEST_DIR = 'Train400lmg'
 
 
-class to_tensor():
-    def __init__(self):
-        self.ToTensor = tr.ToTensor()
-
-    def crop_center(self, img, cropx, cropy):
-        y, x = img.shape
-        startx = x // 2 - (cropx // 2)
-        starty = y // 2 - (cropy // 2)
-        return img[starty:starty + cropy, startx:startx + cropx]
-
-    def __call__(self, depth):
-        depth = cv2.resize(depth, (1800, 2000), cv2.INTER_NEAREST)
-        depth = self.crop_center(depth, 1600, 1024)
-        depth = cv2.resize(depth, (640, 192), cv2.INTER_NEAREST)
-
-        depth_tensor = torch.from_numpy(depth).unsqueeze(0).float()
-        depth_tensor[depth_tensor < 0.0] = 0.0
-        depth_tensor[depth_tensor > 80.0] = 80.0
-        return depth_tensor / 80.0
+def get_input_img(path, color=True):
+    """Read the image in KITTI."""
+    img = Image.open(path)
+    if color:
+        img = img.convert('RGB')
+    return img
 
 
-class Make3D_dataset(Dataset):
-    def __init__(self, root_dir, depth_resize='bilinear'):
-        self.root_dir = root_dir
-        self.tensor_transform = [tr.ToPILImage(), tr.Resize((2000, 1800)), tr.CenterCrop((1024, 1600)),
-                                 tr.Resize((192, 640)), tr.ToTensor(), tr.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-        self.label_tensor_transform = [to_tensor()]
-        self.depth_resize = depth_resize
+def get_input_depth_make3d(path):
+    m = loadmat(path)
+    pos3dgrid = m['Position3DGrid']
+    depth = pos3dgrid[:, :, 3]
+    return depth
 
-        self.image_files = glob.glob(osp.join(self.root_dir, 'Test134', '*.jpg'))
-        self.label_files = [f.replace('Test134', 'Gridlaserdata').replace('img', 'depth_sph_corr').replace('jpg', 'mat')
-                            for f in self.image_files]
 
-        self.image_transform = tr.Compose(self.tensor_transform)
-        self.label_transform = tr.Compose(self.label_tensor_transform)
+def read_calib_file(path):
+    """Read KITTI calibration file (from https://github.com/hunse/kitti)"""
+    float_chars = set('0123456789.e+- ')
+    data = {}
+    with open(path, 'r') as f:
+        for line in f.readlines():
+            key, value = line.split(':', 1)
+            value = value.strip()
+            data[key] = value
+            if float_chars.issuperset(value):
+                # try to cast to float array
+                try:
+                    data[key] = np.array(list(map(float, value.split(' '))))
+                except ValueError:
+                    # casting error: data[key] already eq. value, so pass
+                    pass
+    return data
 
-        self.color_new_height = 1704 // 2
-        self.depth_new_height = 21
+
+def load_velodyne_points(filename):
+    """Load 3D point cloud from KITTI file format (adapted from
+    https://github.com/hunse/kitti)"""
+    points = np.fromfile(filename, dtype=np.float32).reshape(-1, 4)
+    points[:, 3] = 1.0  # homogeneous
+    return points
+
+
+def sub2ind(matrixSize, rowSub, colSub):
+    """Convert row, col matrix subscripts to linear indices (adapted from
+    https://github.com/nianticlabs/monodepth2)"""
+    m, n = matrixSize
+    return rowSub * (n - 1) + colSub - 1
+
+
+class Make3DDataset(data.Dataset):
+    DATA_NAME_DICT = {
+        'color': (TRAIN_DIR, 'img-', 'jpg'),
+        'depth': ('Gridlaserdata', 'depth_sph_corr-', 'mat')
+    }
+
+    def __init__(self,
+                 dataset_dir: str,
+                 train: bool = True,
+                 normalize_params=[0.411, 0.432, 0.45],
+                 use_godard_crop=True,
+                 full_size=None,
+                 resize_before_crop=False
+                 ):
+        super().__init__()
+        raise NotImplementedError('todo proper resizing+verify transforms')
+
+        self.dataset_dir = dataset_dir
+        self.use_godard_crop = use_godard_crop
+        self.full_size = full_size
+        self.resize_before_crop = resize_before_crop
+
+        if not train:
+            self.DATA_NAME_DICT['color'] = (TEST_DIR, 'img-', 'jpg')
+
+        data_dir = os.path.join(self.dataset_dir, TRAIN_DIR if train else TEST_DIR)
+        self.file_list = self._get_file_list(split_file)
+
+        # Initializate transforms
+        self.to_tensor = tf.ToTensor()
+        self.normalize = tf.Normalize(mean=normalize_params, std=[1, 1, 1])
 
     def __len__(self):
-        return len(self.image_files)
+        return len(self.file_list)
 
-    def __getitem__(self, idx):
-        image = cv2.imread(self.image_files[idx])[:, :, ::-1]
-        depth_filename = self.label_files[idx]
-        image = self.image_transform(image)
-        return image, self.image_files[idx].split('/')[-1].split('.')[0], depth_filename
+    def __getitem__(self, f_idx):
+        file_info = self.file_list[f_idx]
+        raise NotImplementedError('todo check this')
+        base_path = os.path.join(self.dataset_dir, '{}',
+                                 '{}' + file_info + '.{}')
+        inputs = {}
+        color_l_path = base_path.format(*self.DATA_NAME_DICT['color'])
+        inputs['color_s_raw'] = get_input_img(color_l_path)
+
+        depth_path = base_path.format(*self.DATA_NAME_DICT['depth'])
+        inputs['depth'] = get_input_depth_make3d(depth_path)
+
+        for key in list(inputs):
+            if 'color' in key:
+                raw_img = inputs[key]
+                if self.resize_before_crop:
+                    self.color_resize = tf.Resize(self.full_size,
+                                                  interpolation=Image.ANTIALIAS)
+
+                    img = self.to_tensor(self.color_resize(raw_img))
+                    if self.use_godard_crop:
+                        top = int((self.full_size[0] - self.full_size[1] / 2) / 2) + 1
+                        bottom = int((self.full_size[0] + self.full_size[1] / 2) / 2) + 1
+                        img = img[:, top:bottom, :]
+                    inputs[key.replace('_raw', '')] = \
+                        self.normalize(img)
+                else:
+                    if self.use_godard_crop:
+                        raw_img = raw_img.crop((0, 710, 1704, 1562))
+                    img = self.to_tensor(raw_img)
+                    if self.full_size is not None:
+                        # for outputting the same image with cv2
+                        img = img.unsqueeze(0)
+                        img = F.interpolate(img, self.full_size, mode='nearest')
+                        img = img.squeeze(0)
+                    inputs[key.replace('_raw', '')] = \
+                        self.normalize(img)
+
+            elif 'depth' in key:
+                raw_depth = inputs[key]
+                if self.use_godard_crop:
+                    raise NotImplementedError('what are these numbers?')
+                    raw_depth = raw_depth[17:38, :]
+                depth = torch.from_numpy(raw_depth.copy()).unsqueeze(0)
+                inputs[key] = depth
+
+        # delete raw data
+        inputs.pop('color_s_raw')
+        inputs['file_info'] = [file_info]
+        return inputs
+
+    def _get_file_list(self, data_dir):
+        files = os.listdir(data_dir)
+        filenames = []
+        for f in files:
+            if f[-3:] != 'jpg':
+                continue
+
+            file_name = f.replace('\n', '').replace('.jpg', '')
+            filenames.append(file_name)
+        return filenames
