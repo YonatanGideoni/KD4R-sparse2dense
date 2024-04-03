@@ -9,7 +9,7 @@ import torch.optim
 
 cudnn.benchmark = True
 
-from models import ResNet
+from models import ResNet, DenseNet
 from metrics import AverageMeter, Result
 from dataloaders.dense_to_sparse import UniformSampling, SimulatedStereo
 import criteria
@@ -82,6 +82,8 @@ def create_data_loaders(args):
 def main():
     global args, best_result, output_directory, train_csv, test_csv
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # evaluation mode
     start_epoch = 0
     if args.evaluate:
@@ -128,19 +130,24 @@ def main():
         elif args.arch == 'resnet18':
             model = ResNet(layers=18, decoder=args.decoder, output_size=train_loader.dataset.output_size,
                            in_channels=in_channels, pretrained=args.pretrained)
+        elif args.arch == 'densenet':
+            # todo add depth to args
+            model = DenseNet(in_channels=in_channels, out_channels=train_loader.dataset.output_size,
+                             depth=56)
+        else:
+            raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
         print("=> model created.")
 
         optim = torch.optim.Adam if args.weight_decay == 0 else torch.optim.AdamW
         optimizer = optim(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-        # model = torch.nn.DataParallel(model).cuda() # for multi-gpu training
-        model = model.cuda()
+        model = model.to(device)
 
     # define loss function (criterion) and optimizer
     if args.criterion == 'l2':
-        criterion = criteria.MaskedMSELoss().cuda()
+        criterion = criteria.MaskedMSELoss().to(device)
     elif args.criterion == 'l1':
-        criterion = criteria.MaskedL1Loss().cuda()
+        criterion = criteria.MaskedL1Loss().to(device)
 
     # create results folder, if not already exists
     output_directory = utils.get_output_directory(args)
