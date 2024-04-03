@@ -131,9 +131,8 @@ def main():
             model = ResNet(layers=18, decoder=args.decoder, output_size=train_loader.dataset.output_size,
                            in_channels=in_channels, pretrained=args.pretrained)
         elif args.arch == 'densenet':
-            # todo add depth to args
-            model = DenseNet(in_channels=in_channels, out_channels=train_loader.dataset.output_size,
-                             depth=56)
+            # todo add depth to args+number of outputs
+            model = DenseNet(in_channels=in_channels, out_channels=1, depth=56)
         else:
             raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
         print("=> model created.")
