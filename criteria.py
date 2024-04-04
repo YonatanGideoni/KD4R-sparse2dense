@@ -27,3 +27,41 @@ class MaskedL1Loss(nn.Module):
         diff = diff[valid_mask]
         self.loss = diff.abs().mean()
         return self.loss
+
+
+class Make3DMaskedL1Loss(nn.Module):
+    def __init__(self):
+        super(Make3DMaskedL1Loss, self).__init__()
+
+    def forward(self, pred, target, MAX_DIST: float = 70.):
+        assert pred.dim() == target.dim(), "inconsistent dimensions"
+
+        _, _, h, w = target.shape
+        pred = torch.nn.functional.interpolate(pred,
+                                               [h, w],
+                                               mode='nearest')
+        valid_mask = ((target > 0) & (target < MAX_DIST)).detach()
+        diff = target - pred
+        diff = diff[valid_mask]
+
+        self.loss = diff.abs().mean()
+        return self.loss
+
+
+class Make3DMaskedMSELoss(nn.Module):
+    def __init__(self):
+        super(Make3DMaskedMSELoss, self).__init__()
+
+    def forward(self, pred, target, MAX_DIST: float = 70.):
+        assert pred.dim() == target.dim(), "inconsistent dimensions"
+
+        _, _, h, w = target.shape
+        pred = torch.nn.functional.interpolate(pred,
+                                               [h, w],
+                                               mode='nearest')
+        valid_mask = ((target > 0) & (target < MAX_DIST)).detach()
+        diff = target - pred
+        diff = diff[valid_mask]
+
+        self.loss = (diff ** 2).mean()
+        return self.loss

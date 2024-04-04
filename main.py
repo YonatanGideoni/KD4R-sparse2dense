@@ -130,9 +130,19 @@ def main():
 
     # define loss function (criterion) and optimizer
     if args.criterion == 'l2':
-        criterion = criteria.MaskedMSELoss().to(device)
+        if args.data == 'make3d':
+            criterion = criteria.Make3DMaskedMSELoss()
+        else:
+            criterion = criteria.MaskedMSELoss()
     elif args.criterion == 'l1':
-        criterion = criteria.MaskedL1Loss().to(device)
+        if args.data == 'make3d':
+            criterion = criteria.Make3DMaskedL1Loss()
+        else:
+            # todo see if this difference is even needed
+            criterion = criteria.MaskedL1Loss()
+    else:
+        raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
+    criterion = criterion.to(device)
 
     # create results folder, if not already exists
     output_directory = utils.get_output_directory(args)
@@ -191,12 +201,12 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         data_time = time.time() - end
 
-        # compute pred
         end = time.time()
+
         pred = model(input)
         loss = criterion(pred, target)
         optimizer.zero_grad()
-        loss.backward()  # compute gradient and do SGD step
+        loss.backward()
         optimizer.step()
 
         if cuda_enabled:
