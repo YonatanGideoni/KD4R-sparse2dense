@@ -40,16 +40,16 @@ def parse_command():
                         help='decoder: ' + ' | '.join(decoder_names) + ' (default: deconv2)')
     parser.add_argument('-j', '--workers', default=10, type=int, metavar='N',
                         help='number of data loading workers (default: 10)')
-    parser.add_argument('--epochs', default=15, type=int, metavar='N',
+    parser.add_argument('--epochs', default=150, type=int, metavar='N',
                         help='number of total epochs to run (default: 15)')
     parser.add_argument('-c', '--criterion', metavar='LOSS', default='l1', choices=loss_names,
                         help='loss function: ' + ' | '.join(loss_names) + ' (default: l1)')
-    parser.add_argument('-b', '--batch-size', default=4, type=int, help='mini-batch size (default: 4)')
-    parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
-                        metavar='LR', help='initial learning rate (default 0.01)')
+    parser.add_argument('-b', '--batch-size', default=1, type=int, help='mini-batch size (default: 4)')
+    parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
+                        metavar='LR', help='initial learning rate (default 1e-3)')
     parser.add_argument('--weight-decay', '--wd', default=0, type=float,
                         metavar='W', help='weight decay (default: 0)')
-    parser.add_argument('--print-freq', '-p', default=10, type=int,
+    parser.add_argument('--print-freq', '-p', default=1, type=int,
                         metavar='N', help='print frequency (default: 10)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')

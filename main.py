@@ -60,6 +60,8 @@ def create_data_loaders(args):
     # put construction of train loader here, for those who are interested in testing only
     train_loader = None
     if not args.evaluate:
+        inputs, targets = zip(*[train_dataset[i] for i in range(1)])
+        train_dataset = torch.utils.data.TensorDataset(torch.stack(inputs), torch.stack(targets))
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                                                    pin_memory=True)
 
@@ -164,29 +166,29 @@ def main():
     for epoch in range(start_epoch, args.epochs):
         utils.adjust_learning_rate(optimizer, epoch, args.lr)
         train(train_loader, model, criterion, optimizer, epoch)  # train for one epoch
-        result, img_merge = validate(val_loader, model, epoch)  # evaluate on validation set
+        # result, img_merge = validate(val_loader, model, epoch)  # evaluate on validation set
 
         # remember best rmse and save checkpoint
-        is_best = result.rmse < best_result.rmse
-        if is_best:
-            best_result = result
-            with open(best_txt, 'w') as txtfile:
-                txtfile.write(
-                    "epoch={}\nmse={:.3f}\nrmse={:.3f}\nabsrel={:.3f}\nlg10={:.3f}\nmae={:.3f}\ndelta1={:.3f}\nt_gpu={:.4f}\n".
-                    format(epoch, result.mse, result.rmse, result.absrel, result.lg10, result.mae, result.delta1,
-                           result.gpu_time))
-            if img_merge is not None:
-                img_filename = output_directory + '/comparison_best.png'
-                utils.save_image(img_merge, img_filename)
+        # is_best = result.rmse < best_result.rmse
+        # if is_best:
+        #     best_result = result
+        #     with open(best_txt, 'w') as txtfile:
+        #         txtfile.write(
+        #             "epoch={}\nmse={:.3f}\nrmse={:.3f}\nabsrel={:.3f}\nlg10={:.3f}\nmae={:.3f}\ndelta1={:.3f}\nt_gpu={:.4f}\n".
+        #             format(epoch, result.mse, result.rmse, result.absrel, result.lg10, result.mae, result.delta1,
+        #                    result.gpu_time))
+        #     if img_merge is not None:
+        #         img_filename = output_directory + '/comparison_best.png'
+        #         utils.save_image(img_merge, img_filename)
 
-        utils.save_checkpoint({
-            'args': args,
-            'epoch': epoch,
-            'arch': args.arch,
-            'model': model,
-            'best_result': best_result,
-            'optimizer': optimizer,
-        }, is_best, epoch, output_directory)
+        # utils.save_checkpoint({
+        #     'args': args,
+        #     'epoch': epoch,
+        #     'arch': args.arch,
+        #     'model': model,
+        #     'best_result': best_result,
+        #     'optimizer': optimizer,
+        # }, is_best, epoch, output_directory)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
