@@ -143,3 +143,16 @@ def add_row(img_merge, row):
 def save_image(img_merge, filename):
     img_merge = Image.fromarray(img_merge.astype('uint8'))
     img_merge.save(filename)
+
+
+def interp_pred(pred: torch.Tensor, target_shape: tuple) -> torch.Tensor:
+    _, _, h, w = target_shape
+    pred = torch.nn.functional.interpolate(pred,
+                                           [h, w],
+                                           mode='nearest')
+
+    return pred
+
+
+def get_make3d_mask(target: torch.Tensor, MAX_DIST: float = 70.) -> torch.Tensor:
+    return ((target > 0) & (target < MAX_DIST)).detach()

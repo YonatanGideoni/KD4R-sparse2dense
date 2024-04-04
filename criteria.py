@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
+from utils import interp_pred, get_make3d_mask
+
 
 class MaskedMSELoss(nn.Module):
     def __init__(self):
@@ -36,11 +38,8 @@ class Make3DMaskedL1Loss(nn.Module):
     def forward(self, pred, target, MAX_DIST: float = 70.):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
-        _, _, h, w = target.shape
-        pred = torch.nn.functional.interpolate(pred,
-                                               [h, w],
-                                               mode='nearest')
-        valid_mask = ((target > 0) & (target < MAX_DIST)).detach()
+        pred = interp_pred(pred, target.shape)
+        valid_mask = get_make3d_mask(target)
         diff = target - pred
         diff = diff[valid_mask]
 
@@ -55,11 +54,8 @@ class Make3DMaskedMSELoss(nn.Module):
     def forward(self, pred, target, MAX_DIST: float = 70.):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
-        _, _, h, w = target.shape
-        pred = torch.nn.functional.interpolate(pred,
-                                               [h, w],
-                                               mode='nearest')
-        valid_mask = ((target > 0) & (target < MAX_DIST)).detach()
+        pred = interp_pred(pred, target.shape)
+        valid_mask = get_make3d_mask(target)
         diff = target - pred
         diff = diff[valid_mask]
 

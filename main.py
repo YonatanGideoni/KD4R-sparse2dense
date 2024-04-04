@@ -216,7 +216,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # measure accuracy and record loss
         result = Result()
-        result.evaluate(pred.data, target.data)
+        result.evaluate(pred.data, target.data, make3d=args.data == 'make3d')
         average_meter.update(result, gpu_time, data_time, input.size(0))
         end = time.time()
 
