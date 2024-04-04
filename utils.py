@@ -149,7 +149,7 @@ def interp_pred(pred: torch.Tensor, target_shape: tuple) -> torch.Tensor:
     _, _, h, w = target_shape
     pred = torch.nn.functional.interpolate(pred,
                                            [h, w],
-                                           mode='nearest')
+                                           mode='bilinear')
 
     return pred
 
