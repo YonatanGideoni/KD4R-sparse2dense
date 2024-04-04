@@ -292,8 +292,7 @@ class FCDenseNet(nn.Module):
         self.dense_blocks_up.append(DenseBlock(cur_channels_count, growth_rate, up_blocks[-1], upsample=False))
         cur_channels_count += growth_rate * up_blocks[-1]
 
-        ## Softmax ##
-
+        ## final conv ##
         self.final_conv = nn.Conv2d(in_channels=cur_channels_count,
                                     out_channels=out_channels, kernel_size=1, stride=1,
                                     padding=0, bias=True)
