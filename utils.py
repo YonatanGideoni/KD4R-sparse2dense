@@ -76,6 +76,7 @@ def save_checkpoint(state, is_best, epoch, output_directory):
 def adjust_learning_rate(optimizer, epoch, lr_init):
     """Sets the learning rate to half the initial LR every 5 epochs"""
     lr = lr_init * (0.5 ** (epoch // 5))
+    print(f'Learning rate for epoch {epoch}: {lr}')
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
