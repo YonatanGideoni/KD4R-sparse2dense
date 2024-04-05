@@ -48,7 +48,7 @@ def create_data_loaders(args):
                                    modality=args.modality, sparsifier=sparsifier)
     elif args.data == 'make3d':
         if not args.evaluate:
-            train_dataset = Make3DDataset(datadir, train=True)
+            train_dataset = Make3DDataset(datadir, train=True, full_size=(args.img_output_size, args.img_output_size))
         val_dataset = NotImplementedError
     else:
         raise RuntimeError('Dataset not found.')
@@ -118,11 +118,11 @@ def main():
             model = ResNet(layers=50, decoder=args.decoder, output_size=224,
                            in_channels=in_channels, pretrained=args.pretrained)
         elif args.arch == 'resnet18':
-            model = ResNet(layers=18, decoder=args.decoder, output_size=224,
-                           in_channels=in_channels, pretrained=args.pretrained)
+            model = ResNet(layers=18, decoder=args.decoder, output_size=args.img_output_size,
+                           in_channels=in_channels, pretrained=args.pretrained, output_channels=args.output_channels)
         elif args.arch == 'densenet57':
             # todo add depth to args+number of outputs
-            model = FCDenseNet57(out_channels=1)
+            model = FCDenseNet57(out_channels=args.output_channels)
         else:
             raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
         print("=> model created.")

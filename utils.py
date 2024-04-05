@@ -45,12 +45,16 @@ def parse_command():
                         metavar='TS', help='training dataset size (default None)')
     parser.add_argument('--weight-decay', '--wd', default=0, type=float,
                         metavar='W', help='weight decay (default: 0)')
-    parser.add_argument('--print-freq', '-p', default=1, type=int,
-                        metavar='N', help='print frequency (default: 1)')
+    parser.add_argument('--print-freq', '-p', default=10, type=int,
+                        metavar='N', help='print frequency (default: 10)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')
     parser.add_argument('-e', '--evaluate', dest='evaluate', type=str, default='',
                         help='evaluate model on validation set')
+    parser.add_argument('--img-output-size', type=int, default=64,
+                        help='Image output size')
+    parser.add_argument('--output-channels', type=int, default=1,
+                        help='# of output channels')
     parser.set_defaults(pretrained=False)
 
     args = parser.parse_args()
