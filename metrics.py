@@ -34,6 +34,7 @@ class Result(object):
 
     def evaluate(self, pred, target, make3d: bool = False):
         if make3d:
+            pred = pred[:, :1]  # in case there are multiple channels, eg in the aleatoric case
             pred = interp_pred(pred, target.shape)
             valid_mask = get_make3d_mask(target)
             pred = pred[valid_mask]
