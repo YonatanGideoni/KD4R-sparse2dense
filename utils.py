@@ -16,9 +16,8 @@ cmap = plt.cm.viridis
 
 def parse_command():
     model_names = ['resnet18', 'resnet50', 'densenet57']
-    loss_names = ['l1', 'l2']
+    loss_names = ['l1', 'l2', 'l1-a']
     data_names = ['nyudepthv2', 'kitti', 'make3d']
-    sparsifier_names = [x.name for x in [UniformSampling, SimulatedStereo]]
     decoder_names = Decoder.names
     modality_names = MyDataloader.modality_names
 
@@ -75,8 +74,8 @@ def save_checkpoint(state, is_best, epoch, output_directory):
 
 
 def adjust_learning_rate(optimizer, epoch, lr_init):
-    """Sets the learning rate to the initial LR decayed by 10 every 5 epochs"""
-    lr = lr_init * (0.1 ** (epoch // 5))
+    """Sets the learning rate to half the initial LR every 5 epochs"""
+    lr = lr_init * (0.5 ** (epoch // 5))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 

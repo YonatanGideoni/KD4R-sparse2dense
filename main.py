@@ -144,6 +144,8 @@ def main():
         else:
             # todo see if this difference is even needed
             criterion = criteria.MaskedL1Loss()
+    elif args.criterion == 'l1-a' and args.data == 'make3d':
+        criterion = criteria.Make3DMaskedAleatoricL1()
     else:
         raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
     criterion = criterion.to(device)
@@ -166,8 +168,8 @@ def main():
             writer.writeheader()
 
     for epoch in range(start_epoch, args.epochs):
-        # utils.adjust_learning_rate(optimizer, epoch, args.lr)
-        train(train_loader, model, criterion, optimizer, epoch)  # train for one epoch
+        utils.adjust_learning_rate(optimizer, epoch, args.lr)
+        train(train_loader, model, criterion, optimizer, epoch)
         # result, img_merge = validate(val_loader, model, epoch)  # evaluate on validation set
 
         # remember best rmse and save checkpoint
