@@ -77,7 +77,7 @@ class Make3DDataset(data.Dataset):
                  dataset_dir: str,
                  train: bool = True,
                  normalize_params=[0.411, 0.432, 0.45],
-                 full_size=None,
+                 full_size=(64, 64),
                  resize_before_crop=False
                  ):
         super().__init__()

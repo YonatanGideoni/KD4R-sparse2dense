@@ -60,8 +60,10 @@ def create_data_loaders(args):
     # put construction of train loader here, for those who are interested in testing only
     train_loader = None
     if not args.evaluate:
-        inputs, targets = zip(*[train_dataset[i] for i in range(1)])
-        train_dataset = torch.utils.data.TensorDataset(torch.stack(inputs), torch.stack(targets))
+        if args.train_size is not None:
+            inputs, targets = zip(*[train_dataset[i] for i in range(args.train_size)])
+            train_dataset = torch.utils.data.TensorDataset(torch.stack(inputs), torch.stack(targets))
+
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                                                    pin_memory=True)
 
@@ -113,10 +115,10 @@ def main():
         print("=> creating Model ({}-{}) ...".format(args.arch, args.decoder))
         in_channels = len(args.modality)
         if args.arch == 'resnet50':
-            model = ResNet(layers=50, decoder=args.decoder, output_size=train_loader.dataset.output_size,
+            model = ResNet(layers=50, decoder=args.decoder, output_size=224,
                            in_channels=in_channels, pretrained=args.pretrained)
         elif args.arch == 'resnet18':
-            model = ResNet(layers=18, decoder=args.decoder, output_size=train_loader.dataset.output_size,
+            model = ResNet(layers=18, decoder=args.decoder, output_size=224,
                            in_channels=in_channels, pretrained=args.pretrained)
         elif args.arch == 'densenet57':
             # todo add depth to args+number of outputs
@@ -164,7 +166,7 @@ def main():
             writer.writeheader()
 
     for epoch in range(start_epoch, args.epochs):
-        utils.adjust_learning_rate(optimizer, epoch, args.lr)
+        # utils.adjust_learning_rate(optimizer, epoch, args.lr)
         train(train_loader, model, criterion, optimizer, epoch)  # train for one epoch
         # result, img_merge = validate(val_loader, model, epoch)  # evaluate on validation set
 
