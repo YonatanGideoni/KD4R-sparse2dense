@@ -40,7 +40,7 @@ def parse_command():
     parser.add_argument('-b', '--batch-size', default=4, type=int, help='mini-batch size (default: 4)')
     parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
                         metavar='LR', help='initial learning rate (default 1e-3)')
-    parser.add_argument('--train-size', default=None, type=float,
+    parser.add_argument('--train-size', default=None, type=int,
                         metavar='TS', help='training dataset size (default None)')
     parser.add_argument('--weight-decay', '--wd', default=0, type=float,
                         metavar='W', help='weight decay (default: 0)')
