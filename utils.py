@@ -53,7 +53,7 @@ def parse_command():
     parser.add_argument('--img-output-size', type=int, default=64,
                         help='Image output size')
     parser.add_argument('--output-channels', type=int, default=1,
-                        help='# of output channels')
+                        help='# of output channels (default: 1)')
     parser.set_defaults(pretrained=False)
 
     args = parser.parse_args()

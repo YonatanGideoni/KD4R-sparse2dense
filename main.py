@@ -248,7 +248,7 @@ def validate(val_loader, model, epoch, write_to_file=True):
         # compute output
         end = time.time()
         with torch.no_grad():
-            pred = model(input)
+            pred = model(input)[:, :1]  # for when there are multiple channels, always return only mean channel
 
         if cuda_enabled:
             torch.cuda.synchronize()
