@@ -13,7 +13,6 @@ from metrics import AverageMeter, Result
 from models import ResNet, FCDenseNet57
 
 args = utils.parse_command()
-print(args)
 
 fieldnames = ['mse', 'rmse', 'absrel', 'lg10', 'mae',
               'delta1', 'delta2', 'delta3',
@@ -65,7 +64,7 @@ def create_data_loaders(args):
             train_dataset = torch.utils.data.TensorDataset(torch.stack(inputs), torch.stack(targets))
 
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
-                                                   pin_memory=True)
+                                                   pin_memory=True, num_workers=args.workers)
 
     print("=> data loaders created.")
     return train_loader, val_loader
