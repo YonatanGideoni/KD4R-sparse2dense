@@ -61,16 +61,9 @@ def parse_command():
     return args
 
 
-def save_checkpoint(state, is_best, epoch, output_directory):
+def save_checkpoint(state, epoch, output_directory):
     checkpoint_filename = os.path.join(output_directory, 'checkpoint-' + str(epoch) + '.pth.tar')
     torch.save(state, checkpoint_filename)
-    if is_best:
-        best_filename = os.path.join(output_directory, 'model_best.pth.tar')
-        shutil.copyfile(checkpoint_filename, best_filename)
-    if epoch > 0:
-        prev_checkpoint_filename = os.path.join(output_directory, 'checkpoint-' + str(epoch - 1) + '.pth.tar')
-        if os.path.exists(prev_checkpoint_filename):
-            os.remove(prev_checkpoint_filename)
 
 
 def adjust_learning_rate(optimizer, epoch, lr_init):
@@ -99,6 +92,9 @@ def colored_depthmap(depth, d_min=None, d_max=None):
 
 
 def merge_into_row(input, depth_target, depth_pred):
+    # todo - is this the correct way to do this? discrepancy between training objective and visualisation
+    depth_target = interp_pred(depth_target, input.shape)
+
     rgb = 255 * np.transpose(np.squeeze(input.cpu().numpy()), (1, 2, 0))  # H, W, C
     depth_target_cpu = np.squeeze(depth_target.cpu().numpy())
     depth_pred_cpu = np.squeeze(depth_pred.data.cpu().numpy())

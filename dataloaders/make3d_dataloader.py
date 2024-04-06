@@ -68,10 +68,6 @@ def sub2ind(matrixSize, rowSub, colSub):
 
 
 class Make3DDataset(data.Dataset):
-    DATA_NAME_DICT = {
-        'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
-        'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat')
-    }
 
     def __init__(self,
                  dataset_dir: str,
@@ -86,6 +82,10 @@ class Make3DDataset(data.Dataset):
         self.full_size = full_size
         self.resize_before_crop = resize_before_crop
 
+        self.DATA_NAME_DICT = {
+            'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
+            'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat')
+        }
         if not train:
             self.DATA_NAME_DICT['color'] = (IMG_TEST_DIR, 'img-', 'jpg')
             self.DATA_NAME_DICT['depth'] = (DEPTH_TEST_DIR, 'depth_sph_corr-', 'mat')

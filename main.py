@@ -49,7 +49,7 @@ def create_data_loaders(args):
     elif args.data == 'make3d':
         if not args.evaluate:
             train_dataset = Make3DDataset(datadir, train=True, full_size=(args.img_output_size, args.img_output_size))
-        val_dataset = NotImplementedError
+        val_dataset = Make3DDataset(datadir, train=False, full_size=(args.img_output_size, args.img_output_size))
     else:
         raise RuntimeError('Dataset not found.')
 
@@ -156,7 +156,6 @@ def main():
         os.makedirs(output_directory)
     train_csv = os.path.join(output_directory, 'train.csv')
     test_csv = os.path.join(output_directory, 'test.csv')
-    best_txt = os.path.join(output_directory, 'best.txt')
 
     # create new csv files with only header
     if not args.resume:
@@ -170,29 +169,18 @@ def main():
     for epoch in range(start_epoch, args.epochs):
         # utils.adjust_learning_rate(optimizer, epoch, args.lr)
         train(train_loader, model, criterion, optimizer, epoch)
-        # result, img_merge = validate(val_loader, model, epoch)  # evaluate on validation set
+        result, img_merge = validate(val_loader, model, epoch)
 
-        # remember best rmse and save checkpoint
-        # is_best = result.rmse < best_result.rmse
-        # if is_best:
-        #     best_result = result
-        #     with open(best_txt, 'w') as txtfile:
-        #         txtfile.write(
-        #             "epoch={}\nmse={:.3f}\nrmse={:.3f}\nabsrel={:.3f}\nlg10={:.3f}\nmae={:.3f}\ndelta1={:.3f}\nt_gpu={:.4f}\n".
-        #             format(epoch, result.mse, result.rmse, result.absrel, result.lg10, result.mae, result.delta1,
-        #                    result.gpu_time))
-        #     if img_merge is not None:
-        #         img_filename = output_directory + '/comparison_best.png'
-        #         utils.save_image(img_merge, img_filename)
+        # todo see what's img merge+save it somehow
 
-        # utils.save_checkpoint({
-        #     'args': args,
-        #     'epoch': epoch,
-        #     'arch': args.arch,
-        #     'model': model,
-        #     'best_result': best_result,
-        #     'optimizer': optimizer,
-        # }, is_best, epoch, output_directory)
+        utils.save_checkpoint({
+            'args': args,
+            'epoch': epoch,
+            'arch': args.arch,
+            'model': model,
+            'best_result': result,
+            'optimizer': optimizer,
+        }, epoch, output_directory)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
@@ -252,20 +240,24 @@ def validate(val_loader, model, epoch, write_to_file=True):
     model.eval()  # switch to evaluate mode
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
-        input, target = input.cuda(), target.cuda()
-        torch.cuda.synchronize()
+        input, target = input.to(device), target.to(device)
+
+        if cuda_enabled:
+            torch.cuda.synchronize()
         data_time = time.time() - end
 
         # compute output
         end = time.time()
         with torch.no_grad():
             pred = model(input)
-        torch.cuda.synchronize()
+
+        if cuda_enabled:
+            torch.cuda.synchronize()
         gpu_time = time.time() - end
 
         # measure accuracy and record loss
         result = Result()
-        result.evaluate(pred.data, target.data)
+        result.evaluate(pred.data, target.data, make3d=args.data == 'make3d')
         average_meter.update(result, gpu_time, data_time, input.size(0))
         end = time.time()
 
