@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import torchvision.transforms as tf
 from PIL import Image, ImageFile
 from scipy.io import loadmat
+from torch import nn
 from torch.utils import data
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -104,39 +105,29 @@ class Make3DDataset(data.Dataset):
         file_info = self.file_list[f_idx]
         base_path = os.path.join(self.dataset_dir, '{}',
                                  '{}' + file_info + '.{}')
-        inputs = {}
         color_l_path = base_path.format(*self.DATA_NAME_DICT['color'])
-        inputs['color_s_raw'] = get_input_img(color_l_path)
+        img = get_input_img(color_l_path)
 
         depth_path = base_path.format(*self.DATA_NAME_DICT['depth'])
-        inputs['depth'] = get_input_depth_make3d(depth_path)
+        depth = get_input_depth_make3d(depth_path)
 
-        for key in list(inputs):
-            if 'color' in key:
-                raw_img = inputs[key]
-                if self.resize_before_crop:
-                    self.color_resize = tf.Resize(self.full_size,
-                                                  interpolation=Image.ANTIALIAS)
+        if self.resize_before_crop:
+            self.color_resize = tf.Resize(self.full_size,
+                                          interpolation=Image.ANTIALIAS)
 
-                    img = self.to_tensor(self.color_resize(raw_img))
-                    inputs[key.replace('_raw', '')] = \
-                        self.normalize(img)
-                else:
-                    img = self.to_tensor(raw_img)
-                    if self.full_size is not None:
-                        # for outputting the same image with cv2
-                        img = img.unsqueeze(0)
-                        img = F.interpolate(img, self.full_size, mode='nearest')
-                        img = img.squeeze(0)
-                    inputs[key.replace('_raw', '')] = \
-                        self.normalize(img)
+            img = self.to_tensor(self.color_resize(img))
+        else:
+            img = self.to_tensor(img)
+            if self.full_size is not None:
+                # for outputting the same image with cv2
+                img = img.unsqueeze(0)
+                img = F.interpolate(img, self.full_size, mode='nearest')
+                img = img.squeeze(0)
+        input_img = self.normalize(img)
 
-            elif 'depth' in key:
-                raw_depth = inputs[key]
-                depth = torch.from_numpy(raw_depth.copy()).unsqueeze(0)
-                inputs[key] = depth
+        depth = torch.from_numpy(depth.copy()).unsqueeze(0)
 
-        return inputs['color_s'], inputs['depth']
+        return input_img, depth
 
     def _get_file_list(self, data_dir):
         files = os.listdir(data_dir)
