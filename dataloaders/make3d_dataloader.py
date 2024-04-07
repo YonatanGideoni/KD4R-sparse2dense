@@ -1,5 +1,5 @@
 # taken from https://github.com/ZM-Zhou/SMDE-Pytorch/
-
+import datetime
 import os
 
 import numpy as np
@@ -102,7 +102,10 @@ class Make3DDataset(data.Dataset):
         self.normalize = tf.Normalize(mean=normalize_params, std=[1, 1, 1])
 
         self.teacher = teacher
-        teacher_base_dir = os.path.join(self.dataset_dir, TEACHER_DIR)
+
+        # use also model name and current time to prevent clashes when distilling different models in paralle
+        time_str = '%Y-%m-%d_%H:%M:%S'.format(datetime.datetime.now())
+        teacher_base_dir = os.path.join(self.dataset_dir, TEACHER_DIR, teacher.__name__, time_str)
         if self.teacher is not None and not os.path.isdir(teacher_base_dir):
             os.makedirs(teacher_base_dir)
 
