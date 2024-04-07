@@ -115,10 +115,10 @@ def main():
         in_channels = len(args.modality)
         if args.arch == 'resnet50':
             model = ResNet(layers=50, decoder=args.decoder, output_size=224,
-                           in_channels=in_channels, pretrained=args.pretrained)
+                           in_channels=in_channels)
         elif args.arch == 'resnet18':
             model = ResNet(layers=18, decoder=args.decoder, output_size=args.img_output_size,
-                           in_channels=in_channels, pretrained=args.pretrained, output_channels=args.output_channels)
+                           in_channels=in_channels, output_channels=args.output_channels)
         elif args.arch == 'densenet57':
             # todo add depth to args+number of outputs
             model = FCDenseNet57(out_channels=args.output_channels)
