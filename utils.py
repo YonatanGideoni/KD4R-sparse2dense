@@ -22,7 +22,7 @@ def parse_command():
     modality_names = MyDataloader.modality_names
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet18', choices=model_names,
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='smolnet', choices=model_names,
                         help='model architecture: ' + ' | '.join(model_names) + ' (default: resnet18)')
     parser.add_argument('--data', metavar='DATA', default='make3d',
                         choices=data_names,
@@ -35,7 +35,7 @@ def parse_command():
                         help='number of data loading workers (default: 4)')
     parser.add_argument('--epochs', default=25, type=int, metavar='N',
                         help='number of total epochs to run (default: 25)')
-    parser.add_argument('-c', '--criterion', metavar='LOSS', default='l1', choices=loss_names,
+    parser.add_argument('-c', '--criterion', metavar='LOSS', default='l1-dist-mse', choices=loss_names,
                         help='loss function: ' + ' | '.join(loss_names) + ' (default: l1)')
     parser.add_argument('-b', '--batch-size', default=4, type=int, help='mini-batch size (default: 4)')
     parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
@@ -54,9 +54,10 @@ def parse_command():
                         help='Image output size')
     parser.add_argument('--output-channels', type=int, default=1,
                         help='# of output channels (default: 1)')
-    parser.add_argument('--teacher-arch', type=str, default=None,
+    parser.add_argument('--teacher-arch', type=str, default='resnet18',
                         help="Teacher model architecture")
-    parser.add_argument('--teacher-checkpoint', type=str, default=None,
+    parser.add_argument('--teacher-checkpoint', type=str,
+                        default='results\\make3d.modality=rgb.arch=resnet18.decoder=deconv2.criterion=l1.lr=0.001.bs=4\\checkpoint-24.pth.tar',
                         help="Teacher model checkpoint")
 
     args = parser.parse_args()
@@ -78,10 +79,9 @@ def adjust_learning_rate(optimizer, epoch, lr_init):
 
 
 def get_output_directory(args):
-    output_directory = os.path.join('results',
-                                    '{}.modality={}.arch={}.decoder={}.criterion={}.lr={}.bs={}'.
-                                    format(args.data, args.modality, args.arch, args.decoder, args.criterion,
-                                           args.lr, args.batch_size))
+    output_dir = (f'{args.data}.modality={args.modality}.arch={args.arch}.decoder={args.decoder}'
+                  f'.criterion={args.criterion}.lr={args.lr}.bs={args.batch_size}.teacher={args.teacher_arch}')
+    output_directory = os.path.join('results', output_dir)
     return output_directory
 
 
