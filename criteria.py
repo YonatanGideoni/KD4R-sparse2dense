@@ -85,3 +85,58 @@ class Make3DMaskedMSELoss(nn.Module):
 
         self.loss = (diff ** 2).mean()
         return self.loss
+
+
+class MaskedDistillationLossL1(nn.Module):
+    def __init__(self, alpha=0.5):
+        super(MaskedDistillationLossL1, self).__init__()
+        self.alpha = alpha
+
+    def forward(self, pred, target):
+        target, teacher_pred = torch.chunk(target, 2, dim=1)
+
+        assert pred.dim() == target.dim(), "inconsistent dimensions"
+        assert teacher_pred.shape[1] == 1, 'Teacher predictions should have 1 channel for regular l1 loss'
+
+        target_mask = get_make3d_mask(target)
+        orig_pred = pred
+        pred = interp_pred(pred, target.shape)
+
+        target_diff = target - pred
+        target_diff = target_diff[target_mask]
+        teacher_diff = teacher_pred - orig_pred
+
+        self.loss = self.alpha * target_diff.abs().mean() + (1 - self.alpha) * teacher_diff.abs().mean()
+        return self.loss
+
+
+class MaskedDistillationLossAleatoricL1(nn.Module):
+    def __init__(self, alpha=0.5):
+        super(MaskedDistillationLossAleatoricL1, self).__init__()
+        self.alpha = alpha
+
+    def forward(self, pred, target):
+        target, teacher_pred = target[:, :1], target[:, 1:]
+
+        assert pred.dim() == target.dim(), "inconsistent dimensions"
+        assert teacher_pred.shape[1] == 2, 'Teacher predictions should have 2 channels for aleatoric loss'
+
+        target_mask = get_make3d_mask(target)
+        orig_pred_mean, orig_pred_logdiversity = torch.chunk(pred, 2, dim=1)
+        pred_mean = interp_pred(orig_pred_mean, target.shape)
+        orig_pred_diversity = torch.exp(orig_pred_logdiversity)
+        pred_diversity = interp_pred(orig_pred_diversity, target.shape)
+
+        target_diff = target - pred_mean
+        target_diff = target_diff[target_mask]
+        teacher_mean, teacher_logdiversity = torch.chunk(teacher_pred, 2, dim=1)
+        teacher_diff = teacher_mean - orig_pred_mean
+        teacher_diversity = torch.exp(teacher_logdiversity)
+
+        loss = (target_diff.abs() / pred_diversity + pred_diversity.log()).mean()
+        distill_loss = (teacher_diff.abs() / teacher_diversity +
+                        teacher_logdiversity - orig_pred_logdiversity +
+                        orig_pred_diversity / teacher_diversity).mean()
+
+        self.loss = self.alpha * loss + (1 - self.alpha) * distill_loss
+        return self.loss
