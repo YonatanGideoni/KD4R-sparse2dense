@@ -159,11 +159,10 @@ class Make3DDataset(data.Dataset):
         teacher_path = base_path.format(*self.DATA_NAME_DICT['teacher'])
         if os.path.exists(teacher_path):
             teach_out = loadmat(teacher_path)['teach_out']
-            return teach_out
+        else:
+            self.teacher.eval()
+            with torch.no_grad():
+                teach_out = self.teacher(input_img.unsqueeze(0)).squeeze(0)
+            savemat(teacher_path, {'teach_out': teach_out})
 
-        self.teacher.eval()
-        with torch.no_grad():
-            teach_out = self.teacher(input_img.unsqueeze(0)).squeeze(0)
-        savemat(teacher_path, {'teach_out': teach_out})
-
-        return teach_out
+        return torch.tensor(teach_out, requires_grad=False)
