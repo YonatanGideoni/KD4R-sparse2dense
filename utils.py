@@ -16,7 +16,7 @@ cmap = plt.cm.viridis
 
 def parse_command():
     model_names = ['resnet18', 'resnet50', 'densenet57']
-    loss_names = ['l1', 'l2', 'l1-a']
+    loss_names = ['l1', 'l2', 'l1-a', 'l1-dist-mse', 'l1-dist-a']
     data_names = ['nyudepthv2', 'kitti', 'make3d']
     decoder_names = Decoder.names
     modality_names = MyDataloader.modality_names
@@ -54,7 +54,10 @@ def parse_command():
                         help='Image output size')
     parser.add_argument('--output-channels', type=int, default=1,
                         help='# of output channels (default: 1)')
-    parser.set_defaults(pretrained=False)
+    parser.add_argument('--teacher-arch', type=str, default=None,
+                        help="Teacher model architecture")
+    parser.add_argument('--teacher-checkpoint', type=str, default=None,
+                        help="Teacher model checkpoint")
 
     args = parser.parse_args()
 
