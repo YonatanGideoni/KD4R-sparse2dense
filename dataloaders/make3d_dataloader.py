@@ -85,10 +85,20 @@ class Make3DDataset(data.Dataset):
         self.full_size = full_size
         self.resize_before_crop = resize_before_crop
 
+        self.teacher = teacher
+
+        teacher_dir = None
+        if self.teacher is not None:
+            # use also model name and current time to prevent clashes when distilling different models in paralle
+            time_str = f'{datetime.datetime.now():%Y_%m_%d_%H_%M_%S}'
+            teacher_dir = os.path.join(TEACHER_DIR, teacher.__class__.__name__, time_str)
+            teacher_base_dir = os.path.join(self.dataset_dir, teacher_dir)
+            os.makedirs(teacher_base_dir, exist_ok=True)
+
         self.DATA_NAME_DICT = {
             'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
             'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat'),
-            'teacher': (TEACHER_DIR, 'teachout-', 'mat')
+            'teacher': (teacher_dir, 'teachout-', 'mat')
         }
         if not train:
             self.DATA_NAME_DICT['color'] = (IMG_TEST_DIR, 'img-', 'jpg')
@@ -100,14 +110,6 @@ class Make3DDataset(data.Dataset):
         # Initializate transforms
         self.to_tensor = tf.ToTensor()
         self.normalize = tf.Normalize(mean=normalize_params, std=[1, 1, 1])
-
-        self.teacher = teacher
-
-        # use also model name and current time to prevent clashes when distilling different models in paralle
-        time_str = '%Y-%m-%d_%H:%M:%S'.format(datetime.datetime.now())
-        teacher_base_dir = os.path.join(self.dataset_dir, TEACHER_DIR, teacher.__name__, time_str)
-        if self.teacher is not None and not os.path.isdir(teacher_base_dir):
-            os.makedirs(teacher_base_dir)
 
     def __len__(self):
         return len(self.file_list)
@@ -162,10 +164,11 @@ class Make3DDataset(data.Dataset):
         teacher_path = base_path.format(*self.DATA_NAME_DICT['teacher'])
         if os.path.exists(teacher_path):
             teach_out = loadmat(teacher_path)['teach_out']
-        else:
-            self.teacher.eval()
-            with torch.no_grad():
-                teach_out = self.teacher(input_img.unsqueeze(0)).squeeze(0)
-            savemat(teacher_path, {'teach_out': teach_out})
+            return torch.tensor(teach_out, requires_grad=False)
 
-        return torch.tensor(teach_out, requires_grad=False)
+        self.teacher.eval()
+        with torch.no_grad():
+            teach_out = self.teacher(input_img.unsqueeze(0)).squeeze(0)
+        savemat(teacher_path, {'teach_out': teach_out})
+
+        return teach_out
