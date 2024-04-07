@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from utils import interp_pred, get_make3d_mask
+from utils import interp_pred, get_dist_mask
 
 
 class MaskedMSELoss(nn.Module):
@@ -40,7 +40,7 @@ class Make3DMaskedL1Loss(nn.Module):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
         pred = interp_pred(pred, target.shape)
-        valid_mask = get_make3d_mask(target)
+        valid_mask = get_dist_mask(target)
 
         diff = target - pred
         diff = diff[valid_mask]
@@ -62,7 +62,7 @@ class Make3DMaskedAleatoricL1(nn.Module):
 
         pred_mean = interp_pred(pred_mean, target.shape)
         pred_diversity = interp_pred(pred_diversity, target.shape)
-        valid_mask = get_make3d_mask(target)
+        valid_mask = get_dist_mask(target)
 
         loss = (target - pred_mean).abs() / pred_diversity + pred_diversity.log()
         loss = loss[valid_mask]
@@ -79,7 +79,7 @@ class Make3DMaskedMSELoss(nn.Module):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
         pred = interp_pred(pred, target.shape)
-        valid_mask = get_make3d_mask(target)
+        valid_mask = get_dist_mask(target)
         diff = target - pred
         diff = diff[valid_mask]
 
@@ -96,7 +96,7 @@ class MaskedDistillationLossL1(nn.Module):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         assert teacher_pred.shape[1] == 1, 'Teacher predictions should have 1 channel for regular l1 loss'
 
-        target_mask = get_make3d_mask(target)
+        target_mask = get_dist_mask(target)
         orig_pred = pred
         pred = interp_pred(pred, target.shape)
 
@@ -117,7 +117,7 @@ class MaskedDistillationLossAleatoricL1(nn.Module):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         assert teacher_pred.shape[1] == 2, 'Teacher predictions should have 2 channels for aleatoric loss'
 
-        target_mask = get_make3d_mask(target)
+        target_mask = get_dist_mask(target)
         orig_pred_mean, orig_pred_logdiversity = torch.chunk(pred, 2, dim=1)
         pred_mean = interp_pred(orig_pred_mean, target.shape)
         orig_pred_diversity = torch.exp(orig_pred_logdiversity)

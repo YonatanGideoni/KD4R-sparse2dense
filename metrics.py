@@ -2,7 +2,7 @@ import torch
 import math
 import numpy as np
 
-from utils import interp_pred, get_make3d_mask
+from utils import interp_pred, get_dist_mask
 
 
 def log10(x):
@@ -36,7 +36,7 @@ class Result(object):
         if make3d:
             pred = pred[:, :1]  # in case there are multiple channels, eg in the aleatoric case
             pred = interp_pred(pred, target.shape)
-            valid_mask = get_make3d_mask(target)
+            valid_mask = get_dist_mask(target)
             pred = pred[valid_mask]
             target = target[valid_mask]
         else:
