@@ -17,6 +17,7 @@ IMG_TRAIN_DIR = 'Train400Img'
 IMG_TEST_DIR = 'Test134'
 DEPTH_TRAIN_DIR = 'Train400Depth'
 DEPTH_TEST_DIR = 'Gridlaserdata'
+TEACHER_DIR = 'teacher'
 
 
 def get_input_img(path, color=True):
@@ -87,7 +88,7 @@ class Make3DDataset(data.Dataset):
         self.DATA_NAME_DICT = {
             'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
             'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat'),
-            'teacher': ('teacher', 'teachout-', 'mat')
+            'teacher': (TEACHER_DIR, 'teachout-', 'mat')
         }
         if not train:
             self.DATA_NAME_DICT['color'] = (IMG_TEST_DIR, 'img-', 'jpg')
@@ -101,6 +102,9 @@ class Make3DDataset(data.Dataset):
         self.normalize = tf.Normalize(mean=normalize_params, std=[1, 1, 1])
 
         self.teacher = teacher
+        teacher_base_dir = os.path.join(self.dataset_dir, TEACHER_DIR)
+        if self.teacher is not None and not os.path.isdir(teacher_base_dir):
+            os.makedirs(teacher_base_dir)
 
     def __len__(self):
         return len(self.file_list)
