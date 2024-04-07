@@ -10,7 +10,7 @@ import utils
 from dataloaders.make3d_dataloader import Make3DDataset
 from dataloaders.nyu_dataloader import NYUDataset
 from metrics import AverageMeter, Result
-from models import ResNet, FCDenseNet57
+from models import ResNet, FCDenseNet57, SmolNet
 
 args = utils.parse_command()
 
@@ -122,6 +122,8 @@ def main():
         elif args.arch == 'densenet57':
             # todo add depth to args+number of outputs
             model = FCDenseNet57(out_channels=args.output_channels)
+        elif args.arch == 'smolnet':
+            model = SmolNet(in_channels=in_channels, out_channels=args.output_channels)
         else:
             raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
         print("=> model created.")

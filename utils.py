@@ -15,7 +15,7 @@ cmap = plt.cm.viridis
 
 
 def parse_command():
-    model_names = ['resnet18', 'resnet50', 'densenet57']
+    model_names = ['resnet18', 'resnet50', 'densenet57', 'smolnet']
     loss_names = ['l1', 'l2', 'l1-a', 'l1-dist-mse', 'l1-dist-a']
     data_names = ['nyudepthv2', 'kitti', 'make3d']
     decoder_names = Decoder.names

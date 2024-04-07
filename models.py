@@ -317,6 +317,20 @@ class FCDenseNet(nn.Module):
         return out
 
 
+class SmolNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1):
+        super(SmolNet, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(64, out_channels, kernel_size=3, padding=1)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.conv3(x)
+        return x
+
+
 def FCDenseNet57(out_channels):
     return FCDenseNet(
         in_channels=3, down_blocks=(4, 4, 4, 4, 4),
