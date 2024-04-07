@@ -22,7 +22,7 @@ def parse_command():
     modality_names = MyDataloader.modality_names
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='smolnet', choices=model_names,
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet18', choices=model_names,
                         help='model architecture: ' + ' | '.join(model_names) + ' (default: resnet18)')
     parser.add_argument('--data', metavar='DATA', default='make3d',
                         choices=data_names,
@@ -33,9 +33,9 @@ def parse_command():
                         help='decoder: ' + ' | '.join(decoder_names) + ' (default: deconv2)')
     parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
-    parser.add_argument('--epochs', default=25, type=int, metavar='N',
-                        help='number of total epochs to run (default: 25)')
-    parser.add_argument('-c', '--criterion', metavar='LOSS', default='l1-dist-mse', choices=loss_names,
+    parser.add_argument('--epochs', default=100, type=int, metavar='N',
+                        help='number of total epochs to run (default: 100)')
+    parser.add_argument('-c', '--criterion', metavar='LOSS', default='l1', choices=loss_names,
                         help='loss function: ' + ' | '.join(loss_names) + ' (default: l1)')
     parser.add_argument('-b', '--batch-size', default=4, type=int, help='mini-batch size (default: 4)')
     parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
@@ -50,14 +50,14 @@ def parse_command():
                         help='path to latest checkpoint (default: none)')
     parser.add_argument('-e', '--evaluate', dest='evaluate', type=str, default='',
                         help='evaluate model on validation set')
-    parser.add_argument('--img-output-size', type=int, default=64,
-                        help='Image output size')
+    parser.add_argument('--img-output-size', type=int, default=224,
+                        help='Image output size (default: 224)')
     parser.add_argument('--output-channels', type=int, default=1,
                         help='# of output channels (default: 1)')
-    parser.add_argument('--teacher-arch', type=str, default='resnet18',
+    parser.add_argument('--teacher-arch', type=str, default=None,
                         help="Teacher model architecture")
     parser.add_argument('--teacher-checkpoint', type=str,
-                        default='results\\make3d.modality=rgb.arch=resnet18.decoder=deconv2.criterion=l1.lr=0.001.bs=4\\checkpoint-24.pth.tar',
+                        default=None,
                         help="Teacher model checkpoint")
 
     args = parser.parse_args()
