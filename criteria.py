@@ -10,7 +10,7 @@ class MaskedMSELoss(nn.Module):
     def __init__(self):
         super(MaskedMSELoss, self).__init__()
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, *args):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         valid_mask = (target > 0).detach()
         diff = target - pred
@@ -23,7 +23,7 @@ class MaskedL1Loss(nn.Module):
     def __init__(self):
         super(MaskedL1Loss, self).__init__()
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, *args):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         valid_mask = (target > 0).detach()
         diff = target - pred
@@ -36,7 +36,7 @@ class Make3DMaskedL1Loss(nn.Module):
     def __init__(self):
         super(Make3DMaskedL1Loss, self).__init__()
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, *args):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
         pred = interp_pred(pred, target.shape)
@@ -53,7 +53,7 @@ class Make3DMaskedAleatoricL1(nn.Module):
     def __init__(self):
         super(Make3DMaskedAleatoricL1, self).__init__()
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, *args):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         assert pred.shape[1] == 2, 'Aleatoric predictions should have 2 channels'
 
@@ -75,7 +75,7 @@ class Make3DMaskedMSELoss(nn.Module):
     def __init__(self):
         super(Make3DMaskedMSELoss, self).__init__()
 
-    def forward(self, pred, target):
+    def forward(self, pred, target, *args):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
 
         pred = interp_pred(pred, target.shape)
@@ -92,9 +92,7 @@ class MaskedDistillationLossL1(nn.Module):
         super(MaskedDistillationLossL1, self).__init__()
         self.alpha = alpha
 
-    def forward(self, pred, target):
-        target, teacher_pred = torch.chunk(target, 2, dim=1)
-
+    def forward(self, pred, target, teacher_pred):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         assert teacher_pred.shape[1] == 1, 'Teacher predictions should have 1 channel for regular l1 loss'
 
@@ -115,9 +113,7 @@ class MaskedDistillationLossAleatoricL1(nn.Module):
         super(MaskedDistillationLossAleatoricL1, self).__init__()
         self.alpha = alpha
 
-    def forward(self, pred, target):
-        target, teacher_pred = target[:, :1], target[:, 1:]
-
+    def forward(self, pred, target, teacher_pred):
         assert pred.dim() == target.dim(), "inconsistent dimensions"
         assert teacher_pred.shape[1] == 2, 'Teacher predictions should have 2 channels for aleatoric loss'
 

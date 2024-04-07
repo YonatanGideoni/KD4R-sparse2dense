@@ -137,10 +137,9 @@ class Make3DDataset(data.Dataset):
 
         teach_res = self.get_teach_output(base_path, input_img)
         if teach_res is not None:
-            gt = torch.stack([depth, teach_res], dim=0)
-            return input_img, gt
+            return input_img, depth, teach_res
 
-        return input_img, depth
+        return input_img, depth, torch.tensor(np.nan)
 
     def _get_file_list(self, data_dir):
         files = os.listdir(data_dir)

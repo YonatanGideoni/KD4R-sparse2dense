@@ -142,7 +142,7 @@ def main():
             assert args.teacher_checkpoint, "=> teacher_checkpoint must be provided given teacher_arch."
             checkpoint = torch.load(args.teacher_checkpoint)
             teacher_model.load_state_dict(checkpoint['model'].state_dict())
-            
+
             print("=> teacher model created.")
 
         train_loader, val_loader = create_data_loaders(args, teacher_model)
@@ -174,9 +174,9 @@ def main():
     elif 'dist' in args.criterion:
         assert teacher_model is not None, "=> teacher model must be provided for distillation loss."
         if args.criterion == 'l1-dist-mse':
-            criterion = criteria.MaskedDistillationLossL1(teacher_model)
+            criterion = criteria.MaskedDistillationLossL1()
         elif args.criterion == 'l1-dist-a':
-            criterion = criteria.MaskedDistillationLossAleatoricL1(teacher_model)
+            criterion = criteria.MaskedDistillationLossAleatoricL1()
         else:
             raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
     else:
@@ -220,9 +220,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
     average_meter = AverageMeter()
     model.train()
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
+    for i, (input, target, teach_output) in enumerate(train_loader):
 
-        input, target = input.to(device), target.to(device)
+        input, target, teach_output = input.to(device), target.to(device), teach_output.to(device)
         if cuda_enabled:
             torch.cuda.synchronize()
 
@@ -231,7 +231,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         end = time.time()
 
         pred = model(input)
-        loss = criterion(pred, target)
+        loss = criterion(pred, target, teach_output)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -272,7 +272,7 @@ def validate(val_loader, model, epoch, write_to_file=True):
     average_meter = AverageMeter()
     model.eval()  # switch to evaluate mode
     end = time.time()
-    for i, (input, target) in enumerate(val_loader):
+    for i, (input, target, _) in enumerate(val_loader):
         input, target = input.to(device), target.to(device)
 
         if cuda_enabled:
