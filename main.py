@@ -70,11 +70,30 @@ def create_data_loaders(args):
     return train_loader, val_loader
 
 
+def create_model(args, in_channels):
+    if args.arch == 'resnet50':
+        model = ResNet(layers=50, decoder=args.decoder, output_size=224,
+                       in_channels=in_channels)
+    elif args.arch == 'resnet18':
+        model = ResNet(layers=18, decoder=args.decoder, output_size=args.img_output_size,
+                       in_channels=in_channels, output_channels=args.output_channels)
+    elif args.arch == 'densenet57':
+        # todo add depth to args+number of outputs
+        model = FCDenseNet57(out_channels=args.output_channels)
+    elif args.arch == 'smolnet':
+        model = SmolNet(in_channels=in_channels, out_channels=args.output_channels)
+    else:
+        raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
+
+    return model
+
+
 def main():
     global args, best_result, output_directory, train_csv, test_csv
 
     # evaluation mode
     start_epoch = 0
+    teacher_model = None
     if args.evaluate:
         assert os.path.isfile(args.evaluate), \
             "=> no best model found at '{}'".format(args.evaluate)
@@ -112,20 +131,20 @@ def main():
     else:
         train_loader, val_loader = create_data_loaders(args)
         print("=> creating Model ({}-{}) ...".format(args.arch, args.decoder))
+
         in_channels = len(args.modality)
-        if args.arch == 'resnet50':
-            model = ResNet(layers=50, decoder=args.decoder, output_size=224,
-                           in_channels=in_channels)
-        elif args.arch == 'resnet18':
-            model = ResNet(layers=18, decoder=args.decoder, output_size=args.img_output_size,
-                           in_channels=in_channels, output_channels=args.output_channels)
-        elif args.arch == 'densenet57':
-            # todo add depth to args+number of outputs
-            model = FCDenseNet57(out_channels=args.output_channels)
-        elif args.arch == 'smolnet':
-            model = SmolNet(in_channels=in_channels, out_channels=args.output_channels)
-        else:
-            raise NotImplementedError(f"Haven't implemented architecture {args.arch}.")
+        model = create_model(args, in_channels)
+        if args.teacher_arch:
+            print("=> creating Teacher Model ({}-{}) ...".format(args.teacher_arch, args.decoder))
+            orig_arch = args.arch
+            args.arch = args.teacher_arch
+            teacher_model = create_model(args, in_channels)
+            args.arch = orig_arch
+
+            assert args.teacher_checkpoint, "=> teacher_checkpoint must be provided given teacher_arch."
+            checkpoint = torch.load(args.teacher_checkpoint)
+            teacher_model.load_state_dict(checkpoint['model'].state_dict())
+
         print("=> model created.")
 
         optim = torch.optim.Adam if args.weight_decay == 0 else torch.optim.AdamW
