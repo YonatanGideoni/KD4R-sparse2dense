@@ -4,6 +4,7 @@ import time
 
 import torch
 import torch.optim
+from torch import nn
 
 import criteria
 import utils
@@ -24,7 +25,7 @@ cuda_enabled = torch.cuda.is_available()
 device = torch.device("cuda" if cuda_enabled else "cpu")
 
 
-def create_data_loaders(args):
+def create_data_loaders(args, teacher: nn.Module = None):
     # Data loading code
     print("=> creating data loaders ...")
     datadir = os.path.join('data', args.data)
@@ -47,7 +48,8 @@ def create_data_loaders(args):
                                    modality=args.modality, sparsifier=sparsifier)
     elif args.data == 'make3d':
         if not args.evaluate:
-            train_dataset = Make3DDataset(datadir, train=True, full_size=(args.img_output_size, args.img_output_size))
+            train_dataset = Make3DDataset(datadir, train=True, full_size=(args.img_output_size, args.img_output_size),
+                                          teacher=teacher)
         val_dataset = Make3DDataset(datadir, train=False, full_size=(args.img_output_size, args.img_output_size))
     else:
         raise RuntimeError('Dataset not found.')
@@ -129,11 +131,7 @@ def main():
 
     # create new model
     else:
-        train_loader, val_loader = create_data_loaders(args)
-        print("=> creating Model ({}-{}) ...".format(args.arch, args.decoder))
-
         in_channels = len(args.modality)
-        model = create_model(args, in_channels)
         if args.teacher_arch:
             print("=> creating Teacher Model ({}-{}) ...".format(args.teacher_arch, args.decoder))
             orig_arch = args.arch
@@ -144,6 +142,13 @@ def main():
             assert args.teacher_checkpoint, "=> teacher_checkpoint must be provided given teacher_arch."
             checkpoint = torch.load(args.teacher_checkpoint)
             teacher_model.load_state_dict(checkpoint['model'].state_dict())
+            
+            print("=> teacher model created.")
+
+        train_loader, val_loader = create_data_loaders(args, teacher_model)
+        print("=> creating Model ({}-{}) ...".format(args.arch, args.decoder))
+
+        model = create_model(args, in_channels)
 
         print("=> model created.")
 
@@ -166,6 +171,14 @@ def main():
             criterion = criteria.MaskedL1Loss()
     elif args.criterion == 'l1-a' and args.data == 'make3d':
         criterion = criteria.Make3DMaskedAleatoricL1()
+    elif 'dist' in args.criterion:
+        assert teacher_model is not None, "=> teacher model must be provided for distillation loss."
+        if args.criterion == 'l1-dist-mse':
+            criterion = criteria.MaskedDistillationLossL1(teacher_model)
+        elif args.criterion == 'l1-dist-a':
+            criterion = criteria.MaskedDistillationLossAleatoricL1(teacher_model)
+        else:
+            raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
     else:
         raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
     criterion = criterion.to(device)
