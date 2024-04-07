@@ -173,7 +173,7 @@ def main():
         criterion = criteria.Make3DMaskedAleatoricL1()
     elif 'dist' in args.criterion:
         assert teacher_model is not None, "=> teacher model must be provided for distillation loss."
-        if args.criterion == 'l1-dist-mse':
+        if args.criterion == 'l1-dist':
             criterion = criteria.MaskedDistillationLossL1()
         elif args.criterion == 'l1-dist-a':
             criterion = criteria.MaskedDistillationLossAleatoricL1()
