@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms as tf
 from PIL import Image, ImageFile
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 from torch import nn
 from torch.utils import data
 
@@ -75,7 +75,8 @@ class Make3DDataset(data.Dataset):
                  train: bool = True,
                  normalize_params=[0.411, 0.432, 0.45],
                  full_size=(64, 64),
-                 resize_before_crop=False
+                 resize_before_crop=False,
+                 teacher: nn.Module = None,
                  ):
         super().__init__()
 
@@ -85,7 +86,8 @@ class Make3DDataset(data.Dataset):
 
         self.DATA_NAME_DICT = {
             'color': (IMG_TRAIN_DIR, 'img-', 'jpg'),
-            'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat')
+            'depth': (DEPTH_TRAIN_DIR, 'depth_sph_corr-', 'mat'),
+            'teacher': ('teacher', 'teachout-', 'mat')
         }
         if not train:
             self.DATA_NAME_DICT['color'] = (IMG_TEST_DIR, 'img-', 'jpg')
@@ -97,6 +99,8 @@ class Make3DDataset(data.Dataset):
         # Initializate transforms
         self.to_tensor = tf.ToTensor()
         self.normalize = tf.Normalize(mean=normalize_params, std=[1, 1, 1])
+
+        self.teacher = teacher
 
     def __len__(self):
         return len(self.file_list)
@@ -127,6 +131,11 @@ class Make3DDataset(data.Dataset):
 
         depth = torch.from_numpy(depth.copy()).unsqueeze(0)
 
+        teach_res = self.get_teach_output(base_path, input_img)
+        if teach_res is not None:
+            gt = torch.stack([depth, teach_res], dim=0)
+            return input_img, gt
+
         return input_img, depth
 
     def _get_file_list(self, data_dir):
@@ -139,3 +148,19 @@ class Make3DDataset(data.Dataset):
             file_name = f.replace('\n', '').replace('.jpg', '').replace('img-', '')
             filenames.append(file_name)
         return filenames
+
+    def get_teach_output(self, base_path, input_img):
+        if self.teacher is None:
+            return None
+
+        teacher_path = base_path.format(*self.DATA_NAME_DICT['teacher'])
+        if os.path.exists(teacher_path):
+            teach_out = loadmat(teacher_path)['teach_out']
+            return teach_out
+
+        self.teacher.eval()
+        with torch.no_grad():
+            teach_out = self.teacher(input_img.unsqueeze(0)).squeeze(0)
+        savemat(teacher_path, {'teach_out': teach_out})
+
+        return teach_out
