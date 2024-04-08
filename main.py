@@ -23,7 +23,6 @@ best_result.set_to_worst()
 
 cuda_enabled = torch.cuda.is_available()
 device = torch.device("cuda" if cuda_enabled else "cpu")
-print(f"Using {device}")
 
 
 def create_data_loaders(args, teacher: nn.Module = None):
@@ -94,6 +93,8 @@ def create_model(args, in_channels):
 def main():
     global args, best_result, output_directory, train_csv, test_csv
 
+    print(f"Using {device}")
+
     # evaluation mode
     start_epoch = 0
     teacher_model = None
@@ -137,8 +138,15 @@ def main():
             print("=> creating Teacher Model ({}-{}) ...".format(args.teacher_arch, args.decoder))
             orig_arch = args.arch
             args.arch = args.teacher_arch
+            if args.teacher_output_channels is None:
+                args.teacher_output_channels = args.output_channels
+            orig_output_channels = args.output_channels
+            args.output_channels = args.teacher_output_channels
+
             teacher_model = create_model(args, in_channels)
+
             args.arch = orig_arch
+            args.output_channels = orig_output_channels
 
             assert args.teacher_checkpoint, "=> teacher_checkpoint must be provided given teacher_arch."
             checkpoint = torch.load(args.teacher_checkpoint)

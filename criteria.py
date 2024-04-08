@@ -155,7 +155,7 @@ class MaskedDistillationLossAleatoricL1TargetOnly(nn.Module):
         teacher_diversity = interp_pred(orig_teacher_diversity, target.shape)
 
         loss = (target_diff.abs() / teacher_diversity)[target_mask].mean()
-        distill_loss = (teacher_diff.abs() / teacher_diversity).mean()
+        distill_loss = (teacher_diff.abs() / orig_teacher_diversity).mean()
 
         self.loss = self.alpha * loss + (1 - self.alpha) * distill_loss
         return self.loss

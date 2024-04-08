@@ -59,6 +59,8 @@ def parse_command():
     parser.add_argument('--teacher-checkpoint', type=str,
                         default=None,
                         help="Teacher model checkpoint")
+    parser.add_argument('--teacher-output-channels', type=int, default=None,
+                        help='# of output channels for teacher model (default: None)')
 
     args = parser.parse_args()
 
