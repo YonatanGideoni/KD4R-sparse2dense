@@ -146,5 +146,5 @@ def interp_pred(pred: torch.Tensor, target_shape: tuple) -> torch.Tensor:
     return pred
 
 
-def get_make3d_mask(target: torch.Tensor, MAX_DIST: float = 70.) -> torch.Tensor:
+def get_dist_mask(target: torch.Tensor, MAX_DIST: float = 70.) -> torch.Tensor:
     return ((target > 0) & (target < MAX_DIST)).detach()
