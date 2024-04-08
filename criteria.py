@@ -122,12 +122,11 @@ class MaskedDistillationLossAleatoricL1(nn.Module):
         pred_diversity = interp_pred(orig_pred_diversity, target.shape)
 
         target_diff = target - pred_mean
-        target_diff = target_diff[target_mask]
         teacher_mean, teacher_logdiversity = torch.chunk(teacher_pred, 2, dim=1)
         teacher_diff = teacher_mean - orig_pred_mean
         teacher_diversity = torch.exp(teacher_logdiversity)
 
-        loss = (target_diff.abs() / pred_diversity + pred_diversity.log()).mean()
+        loss = (target_diff.abs() / pred_diversity + pred_diversity.log())[target_mask].mean()
         distill_loss = (teacher_diff.abs() / teacher_diversity +
                         teacher_logdiversity - orig_pred_logdiversity +
                         orig_pred_diversity / teacher_diversity).mean()
