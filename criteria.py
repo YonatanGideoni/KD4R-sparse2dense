@@ -1,7 +1,5 @@
-import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 
 from utils import interp_pred, get_dist_mask
 
