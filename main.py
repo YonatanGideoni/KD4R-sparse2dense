@@ -23,6 +23,7 @@ best_result.set_to_worst()
 
 cuda_enabled = torch.cuda.is_available()
 device = torch.device("cuda" if cuda_enabled else "cpu")
+print(f"Using {device}")
 
 
 def create_data_loaders(args, teacher: nn.Module = None):
@@ -177,6 +178,8 @@ def main():
             criterion = criteria.MaskedDistillationLossL1()
         elif args.criterion == 'l1-dist-a':
             criterion = criteria.MaskedDistillationLossAleatoricL1()
+        elif args.criterion == 'l1-dist-a-t':
+            criterion = criteria.MaskedDistillationLossAleatoricL1TargetOnly()
         else:
             raise NotImplementedError(f"Haven't implemented criterion {args.criterion}.")
     else:

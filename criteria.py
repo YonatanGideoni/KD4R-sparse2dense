@@ -133,3 +133,29 @@ class MaskedDistillationLossAleatoricL1(nn.Module):
 
         self.loss = self.alpha * loss + (1 - self.alpha) * distill_loss
         return self.loss
+
+
+class MaskedDistillationLossAleatoricL1TargetOnly(nn.Module):
+    def __init__(self, alpha=0.5):
+        super(MaskedDistillationLossAleatoricL1TargetOnly, self).__init__()
+        self.alpha = alpha
+
+    def forward(self, pred, target, teacher_pred):
+        assert pred.dim() == target.dim(), "inconsistent dimensions"
+        assert teacher_pred.shape[1] == 2, 'Teacher predictions should have 2 channels for aleatoric loss'
+
+        target_mask = get_dist_mask(target)
+        orig_pred = pred
+        pred = interp_pred(pred, target.shape)
+
+        target_diff = target - pred
+        teacher_mean, teacher_logdiversity = torch.chunk(teacher_pred, 2, dim=1)
+        teacher_diff = teacher_mean - orig_pred
+        orig_teacher_diversity = torch.exp(teacher_logdiversity)
+        teacher_diversity = interp_pred(orig_teacher_diversity, target.shape)
+
+        loss = (target_diff.abs() / teacher_diversity)[target_mask].mean()
+        distill_loss = (teacher_diff.abs() / teacher_diversity).mean()
+
+        self.loss = self.alpha * loss + (1 - self.alpha) * distill_loss
+        return self.loss
